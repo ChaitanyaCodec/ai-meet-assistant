@@ -2,7 +2,8 @@ import os
 import requests
 from datetime import datetime
 
-from flask import Flask, request
+import markdown 
+from flask import Flask, request, render_template
 from flask_sqlalchemy import SQLAlchemy
 from faster_whisper import WhisperModel
 from werkzeug.utils import secure_filename
@@ -93,32 +94,35 @@ def allowed_file(filename):
 # ---------------------------------------------------
 
 def generate_summary(transcript):
-
     prompt = f"""
-    You are an AI Meeting Assistant.
+    Summarize this meeting clearly.
 
-    Analyze the meeting transcript below and provide:
+    Use markdown formatting.
 
-    1. Executive Summary
-    2. Key Discussion Points
-    3. Action Items
-    4. Important Decisions
-    5. Risks or Blockers
+    Include:
+    - Executive Summary
+    - Key Points
+    - Action Items
 
-    Meeting Transcript:
+    Transcript:
     {transcript}
-    """
+    """    
 
+    transcript = transcript[:4000]      # limits response length if too long
+
+
+    
     try:
 
         response = requests.post(
             "http://localhost:11434/api/generate",
             json={
                 "model": "phi3",
+
                 "prompt": prompt,
                 "stream": False
             },
-            timeout=120
+            timeout=300
         )
 
         result = response.json()
@@ -139,10 +143,38 @@ def generate_summary(transcript):
 @app.route('/')
 def home():
 
-    return {
-        "message": "AI Meeting Assistant API running"
-    }
+    return render_template('index.html')
 
+@app.route('/history')
+def history():
+
+    meetings = Meeting.query.order_by(
+        Meeting.created_at.desc()   
+    ).all()    #Fetch all meetings sorted newest first.
+
+    return render_template(
+        'history.html',
+        meetings=meetings
+    )
+
+@app.route('/meeting/<int:id>')
+def meeting_detail(id):
+
+    meeting = Meeting.query.get(id)
+
+    if not meeting:
+
+        return "Meeting not found", 404
+
+    formatted_summary = markdown.markdown(
+        meeting.summary
+    )
+
+    return render_template(
+        'meeting_detail.html',
+        meeting=meeting,
+        formatted_summary=formatted_summary
+    )
 # ---------------------------------------------------
 # Upload + Transcription + Summary Route
 # ---------------------------------------------------
@@ -235,6 +267,65 @@ def upload_audio():
             "error": str(e)
         }, 500
 
+# ---------------------------------------------------
+# UI UPLOAD ROUTE
+# ---------------------------------------------------
+@app.route('/upload-ui', methods=['POST'])
+def upload_ui():
+
+    if 'audio' not in request.files:
+
+        return "<p>No audio uploaded</p>"
+
+    audio = request.files['audio']
+
+    filename = secure_filename(audio.filename)
+
+    filepath = os.path.join(
+        UPLOAD_FOLDER,
+        filename
+    )
+
+    audio.save(filepath)
+
+    segments, info = model.transcribe(filepath)
+
+    transcript = ""
+
+    for segment in segments:
+
+        transcript += segment.text + " "
+
+    summary = generate_summary(transcript)
+    formatted_summary = markdown.markdown(summary)
+
+    meeting = Meeting(
+        filename=filename,
+        transcript=transcript,
+        summary=summary
+    )
+
+    db.session.add(meeting)
+
+    db.session.commit()
+
+    return f'''
+    <div class="result-box">
+
+        <h2>Transcript</h2>
+
+        <p>{transcript}</p>
+
+        <hr>
+
+        <h2>Summary</h2>
+
+        <div class="summary-box">
+            {formatted_summary}
+        </div>
+
+    </div>
+'''
 # ---------------------------------------------------
 # GET ALL MEETINGS
 # ---------------------------------------------------
