@@ -1,42 +1,379 @@
 import os
+import requests
+from datetime import datetime
 
 from flask import Flask, request
+from flask_sqlalchemy import SQLAlchemy
 from faster_whisper import WhisperModel
+from werkzeug.utils import secure_filename
+
+# ---------------------------------------------------
+# Flask App Configuration
+# ---------------------------------------------------
 
 app = Flask(__name__)
 
+# Database configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///meetings.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Max upload size = 100MB
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024
+
+db = SQLAlchemy(app)
+
+# ---------------------------------------------------
+# Upload Configuration
+# ---------------------------------------------------
+
 UPLOAD_FOLDER = "uploads"
 
+# Create uploads folder automatically if missing
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# Allowed audio/video extensions
+ALLOWED_EXTENSIONS = {
+    'mp3',
+    'wav',
+    'm4a',
+    'mp4'
+}
+
+# ---------------------------------------------------
+# Whisper Model Initialization
+# ---------------------------------------------------
+
+# Loads Faster-Whisper model into memory
 model = WhisperModel("base")
+
+# ---------------------------------------------------
+# Database Model
+# ---------------------------------------------------
+
+class Meeting(db.Model):
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    filename = db.Column(
+        db.String(255),
+        nullable=False
+    )
+
+    transcript = db.Column(
+        db.Text,
+        nullable=False
+    )
+
+    summary = db.Column(
+        db.Text,
+        nullable=False
+    )
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow
+    )
+
+# ---------------------------------------------------
+# Utility Functions
+# ---------------------------------------------------
+
+def allowed_file(filename):
+
+    return (
+        '.' in filename and
+        filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    )
+
+# ---------------------------------------------------
+# AI Summarization Function
+# ---------------------------------------------------
+
+def generate_summary(transcript):
+
+    prompt = f"""
+    You are an AI Meeting Assistant.
+
+    Analyze the meeting transcript below and provide:
+
+    1. Executive Summary
+    2. Key Discussion Points
+    3. Action Items
+    4. Important Decisions
+    5. Risks or Blockers
+
+    Meeting Transcript:
+    {transcript}
+    """
+
+    try:
+
+        response = requests.post(
+            "http://localhost:11434/api/generate",
+            json={
+                "model": "phi3",
+                "prompt": prompt,
+                "stream": False
+            },
+            timeout=120
+        )
+
+        result = response.json()
+
+        return result.get(
+            "response",
+            "Summary generation failed."
+        )
+
+    except Exception as e:
+
+        return f"Summary generation error: {str(e)}"
+
+# ---------------------------------------------------
+# Home Route
+# ---------------------------------------------------
 
 @app.route('/')
 def home():
-    return {"message": "Server running"}
+
+    return {
+        "message": "AI Meeting Assistant API running"
+    }
+
+# ---------------------------------------------------
+# Upload + Transcription + Summary Route
+# ---------------------------------------------------
 
 @app.route('/upload', methods=['POST'])
 def upload_audio():
 
+    # Validate audio key
+    if 'audio' not in request.files:
+
+        return {
+            "error": "No audio file uploaded"
+        }, 400
+
     audio = request.files['audio']
 
-    filepath = os.path.join(
-        UPLOAD_FOLDER,
-        audio.filename
-    )
+    # Validate empty filename
+    if audio.filename == '':
 
-    audio.save(filepath)
+        return {
+            "error": "No selected file"
+        }, 400
 
-    segments, info = model.transcribe(filepath)  #“AI, listen to this audio and convert speech into text.”
+    # Validate file extension
+    if not allowed_file(audio.filename):
 
-    transcript = ""
+        return {
+            "error": "Unsupported file format"
+        }, 400
 
-    for segment in segments:
-        transcript += segment.text
+    try:
+
+        # Secure filename
+        filename = secure_filename(audio.filename)
+
+        filepath = os.path.join(
+            UPLOAD_FOLDER,
+            filename
+        )
+
+        # Save uploaded file
+        audio.save(filepath)
+
+        # ---------------------------------------------------
+        # Whisper Transcription
+        # ---------------------------------------------------
+
+        segments, info = model.transcribe(filepath)
+
+        transcript = ""
+
+        for segment in segments:
+
+            transcript += segment.text + " "
+
+        # ---------------------------------------------------
+        # AI Summary Generation
+        # ---------------------------------------------------
+
+        summary = generate_summary(transcript)
+
+        # ---------------------------------------------------
+        # Save To Database
+        # ---------------------------------------------------
+
+        meeting = Meeting(
+            filename=filename,
+            transcript=transcript,
+            summary=summary
+        )
+
+        db.session.add(meeting)
+
+        db.session.commit()
+
+        # ---------------------------------------------------
+        # API Response
+        # ---------------------------------------------------
+
+        return {
+            "message": "Meeting processed successfully",
+            "meeting_id": meeting.id,
+            "transcript": transcript,
+            "summary": summary
+        }
+
+    except Exception as e:
+
+        return {
+            "error": str(e)
+        }, 500
+
+# ---------------------------------------------------
+# GET ALL MEETINGS
+# ---------------------------------------------------
+
+@app.route('/meetings', methods=['GET'])
+def get_meetings():
+
+    meetings = Meeting.query.all()
+
+    results = []
+
+    for meeting in meetings:
+
+        results.append({
+            "id": meeting.id,
+            "filename": meeting.filename,
+            "transcript": meeting.transcript,
+            "summary": meeting.summary,
+            "created_at": meeting.created_at
+        })
+
+    return results
+
+# ---------------------------------------------------
+# GET SINGLE MEETING
+# ---------------------------------------------------
+
+@app.route('/meetings/<int:id>', methods=['GET'])
+def get_meeting(id):
+
+    meeting = Meeting.query.get(id)
+
+    if not meeting:
+
+        return {
+            "error": "Meeting not found"
+        }, 404
 
     return {
-        "transcript": transcript
+        "id": meeting.id,
+        "filename": meeting.filename,
+        "transcript": meeting.transcript,
+        "summary": meeting.summary,
+        "created_at": meeting.created_at
     }
 
+# ---------------------------------------------------
+# UPDATE MEETING
+# ---------------------------------------------------
+
+@app.route('/meetings/<int:id>', methods=['PUT'])
+def update_meeting(id):
+
+    meeting = Meeting.query.get(id)
+
+    if not meeting:
+
+        return {
+            "error": "Meeting not found"
+        }, 404
+
+    # Validate JSON body
+    if not request.json:
+
+        return {
+            "error": "Invalid JSON body"
+        }, 400
+
+    data = request.json
+
+    # Update summary
+    meeting.summary = data.get(
+        'summary',
+        meeting.summary
+    )
+
+    # Update transcript
+    meeting.transcript = data.get(
+        'transcript',
+        meeting.transcript
+    )
+
+    db.session.commit()
+
+    return {
+        "message": "Meeting updated successfully",
+        "meeting": {
+            "id": meeting.id,
+            "summary": meeting.summary,
+            "transcript": meeting.transcript
+        }
+    }
+
+# ---------------------------------------------------
+# DELETE MEETING
+# ---------------------------------------------------
+
+@app.route('/meetings/<int:id>', methods=['DELETE'])
+def delete_meeting(id):
+
+    meeting = Meeting.query.get(id)
+
+    if not meeting:
+
+        return {
+            "error": "Meeting not found"
+        }, 404
+
+    # Delete uploaded file if exists
+    filepath = os.path.join(
+        UPLOAD_FOLDER,
+        meeting.filename
+    )
+
+    if os.path.exists(filepath):
+
+        os.remove(filepath)
+
+    # Delete database row
+    db.session.delete(meeting)
+
+    db.session.commit()
+
+    return {
+        "message": "Meeting deleted successfully"
+    }
+
+# ---------------------------------------------------
+# Create Database Tables
+# ---------------------------------------------------
+
+with app.app_context():
+
+    db.create_all()
+
+# ---------------------------------------------------
+# Run Flask App
+# ---------------------------------------------------
+
 if __name__ == '__main__':
+
     app.run(debug=True)
