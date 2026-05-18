@@ -2,10 +2,8 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>AI Meeting Assistant</title>
 
     <!-- HTMX -->
@@ -13,562 +11,408 @@
 
     <style>
         :root {
-
             --bg-main: #f8fafc;
             --surface: #ffffff;
-
             --text-main: #0f172a;
             --text-muted: #475569;
-
             --primary: #4f46e5;
             --primary-hover: #4338ca;
-
             --border: #e2e8f0;
-
-            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-            --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.06);
-
-            --radius: 16px;
-        }
-
-        * {
-            box-sizing: border-box;
+            --ring: rgba(79, 70, 229, 0.15);
         }
 
         body {
-
-            margin: 0;
-
-            font-family:
-                Inter,
-                system-ui,
-                -apple-system,
-                BlinkMacSystemFont,
-                "Segoe UI",
-                sans-serif;
-
-            background: var(--bg-main);
-
-            color: var(--text-main);
-
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             padding: 40px 20px;
-
-            line-height: 1.7;
-        }
-
-        .container {
-
-            max-width: 900px;
+            max-width: 800px;
             margin: auto;
+            line-height: 1.6;
+            background-color: var(--bg-main);
+            color: var(--text-main);
         }
 
         /* ----------------------------------- */
-        /* Header */
+        /* Header & Navbar Layout              */
         /* ----------------------------------- */
 
         header {
-
             display: flex;
-
-            justify-content: space-between;
-
             align-items: center;
-
-            margin-bottom: 36px;
-
+            justify-content: space-between;
+            margin-bottom: 32px;
             padding-bottom: 20px;
-
             border-bottom: 1px solid var(--border);
         }
 
         .brand {
-
             display: flex;
-
             align-items: center;
-
-            gap: 14px;
+            gap: 12px;
         }
 
         .brand svg {
-
             color: var(--primary);
-
-            flex-shrink: 0;
         }
 
         .brand h1 {
-
-            margin: 0;
-
-            font-size: 28px;
-
-            font-weight: 800;
-
+            font-size: 22px;
+            font-weight: 700;
             letter-spacing: -0.03em;
+            margin: 0;
         }
 
-        /* ----------------------------------- */
-        /* Buttons */
-        /* ----------------------------------- */
-
+        /* Secondary Button Styling for History Link */
         .btn-secondary {
-
             display: inline-flex;
-
             align-items: center;
-
             gap: 8px;
-
             text-decoration: none;
-
+            padding: 9px 16px;
             background: var(--surface);
-
-            border: 1px solid var(--border);
-
             color: var(--text-muted);
-
-            padding: 10px 16px;
-
-            border-radius: 10px;
-
+            border: 1px solid var(--border);
+            border-radius: 8px;
             font-size: 14px;
-
-            font-weight: 600;
-
+            font-weight: 500;
             transition: all 0.2s ease;
-
-            box-shadow: var(--shadow-sm);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
         }
 
         .btn-secondary:hover {
-
-            background: #f1f5f9;
-
             color: var(--text-main);
-        }
-
-        .btn-primary {
-
-            width: 100%;
-
-            border: none;
-
-            background: var(--primary);
-
-            color: white;
-
-            padding: 14px 18px;
-
-            border-radius: 12px;
-
-            font-size: 15px;
-
-            font-weight: 700;
-
-            cursor: pointer;
-
-            transition:
-                transform 0.2s ease,
-                background 0.2s ease,
-                box-shadow 0.2s ease;
-
-            box-shadow:
-                0 6px 18px rgba(79, 70, 229, 0.25);
-        }
-
-        .btn-primary:hover {
-
-            background: var(--primary-hover);
-
-            transform: translateY(-1px);
-        }
-
-        form.htmx-request .btn-primary {
-
-            opacity: 0.6;
-
-            pointer-events: none;
-
-            transform: none;
+            border-color: #cbd5e1;
+            background: #f1f5f9;
         }
 
         /* ----------------------------------- */
-        /* Upload Card */
+        /* Interactive Form & Custom Upload Box*/
         /* ----------------------------------- */
 
-        .card {
-
+        .upload-box {
             background: var(--surface);
-
-            border: 1px solid var(--border);
-
-            border-radius: var(--radius);
-
             padding: 32px;
-
-            box-shadow: var(--shadow-md);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
         }
 
         .file-group {
-
-            margin-bottom: 22px;
+            margin-bottom: 24px;
         }
 
         .file-label {
-
             display: block;
-
             font-size: 14px;
-
             font-weight: 600;
-
-            margin-bottom: 10px;
-
             color: var(--text-muted);
+            margin-bottom: 8px;
         }
 
+        /* Premium Input Field Interaction wrapper */
         input[type="file"] {
-
+            display: block;
             width: 100%;
-
-            border: 1px dashed #cbd5e1;
-
-            background: #f8fafc;
-
-            border-radius: 12px;
-
-            padding: 14px;
-
-            cursor: pointer;
-
-            transition: all 0.2s ease;
-
+            font-size: 14px;
             color: var(--text-muted);
+            padding: 10px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            border: 1px dashed #cbd5e1;
+            cursor: pointer;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
         }
 
         input[type="file"]:hover {
-
-            background: #eef2ff;
-
-            border-color: var(--primary);
+            background: #e2e8f0;
+            border-color: #94a3b8;
         }
 
-        form.htmx-request input[type="file"] {
+        input[type="file"]:focus {
+            outline: 2px solid var(--primary);
+        }
 
-            opacity: 0.5;
+        /* Primary Call-to-Action Button */
+        .btn-primary {
+            width: 100%;
+            padding: 12px 20px;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background: var(--primary);
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
 
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        /* ----------------------------------- */
+        /* Processing Constraints & Dull States*/
+        /* ----------------------------------- */
+
+        form.htmx-request .btn-primary {
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
             pointer-events: none;
         }
 
-        /* ----------------------------------- */
-        /* Loading State */
-        /* ----------------------------------- */
+        form.htmx-request input[type="file"] {
+            pointer-events: none;
+            opacity: 0.5;
+            background: #f8fafc;
+        }
 
+        /* ----------------------------------- */
+        /* Claude-Style Pure CSS Typewriter    */
+        /* ----------------------------------- */
+        /* Replace your loading CSS block with this */
         #loading {
-
             display: none;
         }
 
         form.htmx-request+#loading {
-
             display: block;
         }
 
         .loading-box {
-
             margin-top: 28px;
-
-            background: #fafafa;
-
-            border: 1px solid var(--border);
-
-            border-radius: 14px;
-
             padding: 24px;
-
-            overflow: hidden;
-
-            position: relative;
-        }
-
-        .loading-box::before {
-
-            content: "";
-
-            position: absolute;
-
-            inset: 0;
-
-            background:
-                linear-gradient(90deg,
-                    transparent,
-                    rgba(79, 70, 229, 0.08),
-                    transparent);
-
-            animation: shimmer 2s infinite;
-        }
-
-        @keyframes shimmer {
-
-            0% {
-                transform: translateX(-100%);
-            }
-
-            100% {
-                transform: translateX(100%);
-            }
+            background: #fafafa;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
 
         .loading-line {
-
-            position: relative;
-
-            z-index: 1;
-
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 14.5px;
+            color: var(--text-main);
+            line-height: 1.5;
             opacity: 0;
-
-            transform: translateY(5px);
-
-            animation: fadeIn 0.5s forwards;
-
-            font-size: 14px;
-
-            color: var(--text-muted);
-
-            margin: 12px 0;
+            transition: opacity 0.4s ease, filter 0.4s ease;
+            display: flex;
+            align-items: center;
         }
 
-        .loading-line:nth-child(1) {
-            animation-delay: 0.2s;
+        /* State: Current active processing line */
+        .loading-line.typing {
+            opacity: 1 !important;
         }
 
-        .loading-line:nth-child(2) {
-            animation-delay: 1s;
+        .loading-line.typing::after {
+            content: '▋';
+            color: var(--primary);
+            margin-left: 6px;
+            animation: streamCursor 0.6s steps(2, start) infinite;
         }
 
-        .loading-line:nth-child(3) {
-            animation-delay: 2s;
+        /* State: Completed lines instantly go faint when the cursor drops down */
+        .loading-line.faint {
+            opacity: 0.45 !important;
         }
 
-        .loading-line:nth-child(4) {
-            animation-delay: 3s;
+        /* State: Ensures any line currently being written or already finished stays visible */
+        .loading-line:not(:empty) {
+            opacity: 1;
         }
 
-        @keyframes fadeIn {
+        /* State: Last line infinite loop standby */
+        .loading-line.pulse {
+            opacity: 1;
+            animation: standbyPulse 1.5s infinite ease-in-out alternate;
+        }
 
-            from {
+        @keyframes streamCursor {
 
-                opacity: 0;
-
-                transform: translateY(5px);
+            0%,
+            100% {
+                opacity: 1;
             }
 
-            to {
+            50% {
+                opacity: 0;
+            }
+        }
 
+        @keyframes standbyPulse {
+            0% {
+                opacity: 0.4;
+            }
+
+            100% {
                 opacity: 1;
-
-                transform: translateY(0);
             }
         }
 
         /* ----------------------------------- */
-        /* Result Section */
+        /* Dashboard Result Area Panel         */
         /* ----------------------------------- */
 
         #result {
-
-            margin-top: 30px;
+            margin-top: 24px;
         }
 
         .result-box {
-
             background: var(--surface);
-
+            padding: 28px;
+            border-radius: 16px;
             border: 1px solid var(--border);
-
-            border-radius: var(--radius);
-
-            padding: 30px;
-
-            box-shadow: var(--shadow-md);
-
-            transition: all 0.2s ease;
+            color: var(--text-muted);
+            font-size: 14px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
         }
 
-        /* ----------------------------------- */
-        /* Summary Styling */
-        /* ----------------------------------- */
-
         .summary-box {
-
-            background: #fcfcff;
-
-            border: 1px solid #e8e8ff;
-
-            padding: 24px;
-
-            border-radius: 14px;
-
-            margin-top: 20px;
-
-            line-height: 1.85;
+            background: var(--surface);
+            padding: 32px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            line-height: 1.8;
+            color: var(--text-main);
+            text-align: left;
         }
 
         .summary-box h1,
         .summary-box h2,
         .summary-box h3 {
-
             margin-top: 24px;
-
-            margin-bottom: 10px;
-
             font-weight: 700;
         }
 
         .summary-box ul {
-
-            padding-left: 24px;
-        }
-
-        pre {
-
-            white-space: pre-wrap;
-        }
-
-        /* ----------------------------------- */
-        /* Responsive */
-        /* ----------------------------------- */
-
-        @media (max-width: 640px) {
-
-            header {
-
-                flex-direction: column;
-
-                align-items: flex-start;
-
-                gap: 16px;
-            }
-
-            .card {
-
-                padding: 24px;
-            }
-
-            .brand h1 {
-
-                font-size: 24px;
-            }
+            padding-left: 20px;
         }
     </style>
-
 </head>
 
 <body>
 
-    <div class="container">
-
-        <!-- Header -->
-
-        <header>
-
-            <div class="brand">
-
-                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-
-                    <path
-                        d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2"
-                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
-
-                    <path d="M8 12L11 15L16 9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                        stroke-linejoin="round" />
-
-                </svg>
-
-                <h1>AI Meeting Assistant</h1>
-
-            </div>
-
-            <a href="/history" class="btn-secondary">
-
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round">
-
-                    <circle cx="12" cy="12" r="10"></circle>
-
-                    <polyline points="12 6 12 12 16 14"></polyline>
-
-                </svg>
-
-                View History
-
-            </a>
-
-        </header>
-
-        <!-- Upload Card -->
-
-        <div class="card">
-
-            <form hx-post="/upload-ui" hx-target="#result" hx-indicator="#loading" hx-encoding="multipart/form-data">
-
-                <div class="file-group">
-
-                    <label class="file-label">
-                        Upload Audio Recording
-                    </label>
-
-                    <input type="file" name="audio" required>
-
-                </div>
-
-                <button type="submit" class="btn-primary">
-
-                    Upload & Process Transcript
-
-                </button>
-
-            </form>
-
-            <!-- Loading State -->
-
-            <div id="loading">
-
-                <div class="loading-box">
-
-                    <div class="loading-line">
-                        ⚡ Processing meeting...
-                    </div>
-
-                    <div class="loading-line">
-                        🎙️ Transcribing audio using Whisper...
-                    </div>
-
-                    <div class="loading-line">
-                        🧠 Generating AI summary using Phi3...
-                    </div>
-
-                    <div class="loading-line">
-                        ⏳ Finalizing structured report...
-                    </div>
-
-                </div>
-
-            </div>
-
+    <!-- Header Navigation Bar Component -->
+    <header>
+        <div class="brand">
+            <!-- Inline Responsive SVG Micro Logo Identifier -->
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                    d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 22 12 2"
+                    stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+                <path d="M8 12L11 15L16 9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                    stroke-linejoin="round" />
+            </svg>
+            <h1>AI Meeting Assistant</h1>
         </div>
 
-        <!-- Dynamic Result Area -->
+        <!-- View History Link structured as a polished functional button component -->
+        <a href="/history" class="btn-secondary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            View History
+        </a>
+    </header>
 
+    <!-- Interactive Workspace Control Card Container -->
+    <div class="upload-box">
+        <form hx-post="/upload-ui" hx-target="#result" hx-encoding="multipart/form-data">
+            <div class="file-group">
+                <label class="file-label">Upload Audio Recording</label>
+                <input type="file" name="audio" required>
+            </div>
+
+            <button type="submit" class="btn-primary">
+                Upload & Process Transcript
+            </button>
+        </form>
+
+        <!-- Pure CSS Streaming Pipeline Console -->
+        <!-- Replace your old #loading section with this -->
+        <!-- Replace your #loading section with this -->
+        <div id="loading">
+            <div class="loading-box" id="stream-container">
+                <!-- We define text in data-text, and the exact time it should take to type/process in data-duration (in milliseconds) -->
+                <div class="loading-line" data-text="⚡ Processing Meeting..." data-duration="2500"></div>
+                <div class="loading-line" data-text="🎙️ Transcribing audio with Whisper..." data-duration="4000"></div>
+                <div class="loading-line" data-text="🧠 Generating AI summary with Phi3..." data-duration="4000"></div>
+                <div class="loading-line" data-text="⏳✨ Preparing structured meeting insights..., please wait..."></div>
+            </div>
+        </div>
+
+        <script>
+            document.body.addEventListener('htmx:beforeRequest', function () {
+                const lines = document.querySelectorAll('.loading-line');
+                let lineIndex = 0;
+
+                // Reset everything to clean slate before starting
+                lines.forEach(line => {
+                    line.textContent = '';
+                    line.className = 'loading-line';
+                });
+
+                function runTimeline() {
+                    if (lineIndex >= lines.length) return;
+
+                    const currentLine = lines[lineIndex];
+                    const targetText = currentLine.getAttribute('data-text');
+
+                    // If it's the very last line ("Please wait"), let it pulse indefinitely
+                    if (lineIndex === lines.length - 1) {
+                        currentLine.textContent = targetText;
+                        currentLine.classList.add('pulse');
+                        return;
+                    }
+
+                    const totalDuration = parseInt(currentLine.getAttribute('data-duration'), 10);
+                    currentLine.classList.add('typing');
+
+                    let charIndex = 0;
+                    // Calculate typing speed dynamically based on the text length and requested duration
+                    const typingSpeed = totalDuration / targetText.length;
+
+                    function typeCharacter() {
+                        if (charIndex < targetText.length) {
+                            currentLine.textContent += targetText.charAt(charIndex);
+                            charIndex++;
+                            setTimeout(typeCharacter, typingSpeed);
+                        } else {
+                            // Line finished typing! Keep cursor blinking on it until the full duration expires
+                            setTimeout(() => {
+                                currentLine.classList.remove('typing');
+                                currentLine.classList.add('faint'); // Dim down precisely on schedule
+
+                                lineIndex++;
+                                runTimeline(); // Instantly move cursor to the next line
+                            }, 400); // Elegant micro-pause before shifting down
+                        }
+                    }
+                    typeCharacter();
+                }
+
+                // Start the orchestrated timeline
+                setTimeout(runTimeline, 300);
+            });
+        </script>
+
+        <!-- Interface Target Execution Landing Block -->
         <div id="result" class="result-box">
-
-            Processed transcript and AI-generated summaries
-            will appear here.
-
+            Processed results, transcript extractions, and summaries will generate directly within this view frame.
         </div>
-
-    </div>
 
 </body>
 

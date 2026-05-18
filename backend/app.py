@@ -4,7 +4,10 @@ from datetime import datetime
 
 import markdown 
 from flask import Flask, request, render_template
+
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import or_
+
 from faster_whisper import WhisperModel
 from werkzeug.utils import secure_filename
 
@@ -148,15 +151,31 @@ def home():
 @app.route('/history')
 def history():
 
-    meetings = Meeting.query.order_by(
-        Meeting.created_at.desc()   
-    ).all()    #Fetch all meetings sorted newest first.
+    search = request.args.get("q", "")
+
+    if search:
+
+        meetings = Meeting.query.filter(
+            or_(
+                Meeting.filename.ilike(f"%{search}%"),
+                Meeting.transcript.ilike(f"%{search}%"),
+                Meeting.summary.ilike(f"%{search}%")
+            )
+        ).order_by(
+            Meeting.created_at.desc()
+        ).all()
+
+    else:
+
+        meetings = Meeting.query.order_by(
+            Meeting.created_at.desc()
+        ).all()
 
     return render_template(
-        'history.html',
-        meetings=meetings
+        "history.html",
+        meetings=meetings,
+        search=search
     )
-
 @app.route('/meeting/<int:id>')
 def meeting_detail(id):
 
@@ -333,7 +352,21 @@ def upload_ui():
 @app.route('/meetings', methods=['GET'])
 def get_meetings():
 
-    meetings = Meeting.query.all()
+    search = request.args.get("q", "")
+
+    if search:
+
+        meetings = Meeting.query.filter(
+            db.or_(
+                Meeting.filename.ilike(f"%{search}%"),
+                Meeting.transcript.ilike(f"%{search}%"),
+                Meeting.summary.ilike(f"%{search}%")
+            )
+        ).all()
+
+    else:
+
+        meetings = Meeting.query.all()
 
     results = []
 
