@@ -377,7 +377,49 @@
 
             background: var(--primary-hover);
         }
+        
+        /* ----------------------------------- */
+/* Meeting Actions */
+/* ----------------------------------- */
 
+.meeting-actions {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+}
+
+.delete-btn {
+
+    border: none;
+
+    background: #d55252;
+
+    color: white;
+
+    padding: 11px 18px;
+
+    border-radius: 10px;
+
+    font-size: 14px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease;
+}
+
+.delete-btn:hover {
+
+    background: #dc2626;
+
+    transform: translateY(-1px);
+}
         /* ----------------------------------- */
         /* Responsive */
         /* ----------------------------------- */
@@ -477,6 +519,9 @@
 
         </form>
 
+
+     
+
         <!-- Meeting List -->
 
         <div class="history-container">
@@ -512,22 +557,56 @@
                     </div>
 
                 </div>
+<div class="meeting-actions">
 
-                <a href="/meeting/{{ meeting.id }}" class="btn-action">
+    <!-- View Details -->
 
-                    View Details
+    <a
+        href="/meeting/{{ meeting.id }}"
+        class="btn-action"
+    >
 
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-                        stroke-linecap="round" stroke-linejoin="round">
+        View Details
 
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
+        <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+        >
 
-                        <polyline points="12 5 19 12 12 19"></polyline>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
 
-                    </svg>
+            <polyline points="12 5 19 12 12 19"></polyline>
 
-                </a>
+        </svg>
 
+    </a>
+
+    <!-- Delete -->
+
+    <form
+        method="POST"
+        action="/delete/{{ meeting.id }}"
+        onsubmit="return confirm('Delete this meeting?')"
+    >
+
+        <button
+            type="submit"
+            class="delete-btn"
+        >
+
+            Delete
+
+        </button>
+
+    </form>
+
+</div>
             </div>
 
             {% else %}

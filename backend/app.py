@@ -11,6 +11,8 @@ from sqlalchemy import or_
 from faster_whisper import WhisperModel
 from werkzeug.utils import secure_filename
 
+from flask import redirect
+
 # ---------------------------------------------------
 # Flask App Configuration
 # ---------------------------------------------------
@@ -96,7 +98,11 @@ def allowed_file(filename):
 # AI Summarization Function
 # ---------------------------------------------------
 
+
 def generate_summary(transcript):
+
+    transcript = transcript[:4000]
+
     prompt = f"""
     Summarize this meeting clearly.
 
@@ -109,19 +115,14 @@ def generate_summary(transcript):
 
     Transcript:
     {transcript}
-    """    
+    """
 
-    transcript = transcript[:4000]      # limits response length if too long
-
-
-    
     try:
 
         response = requests.post(
             "http://localhost:11434/api/generate",
             json={
                 "model": "phi3",
-
                 "prompt": prompt,
                 "stream": False
             },
@@ -132,12 +133,29 @@ def generate_summary(transcript):
 
         return result.get(
             "response",
-            "Summary generation failed."
+            "Summary could not be generated."
         )
 
-    except Exception as e:
+    except requests.exceptions.Timeout:
 
-        return f"Summary generation error: {str(e)}"
+        return """
+## Summary Temporarily Unavailable
+
+The AI model took too long to respond.
+
+Transcript was successfully processed and saved.
+Please try again with a shorter recording.
+"""
+
+    except Exception:
+
+        return """
+## Summary Generation Failed
+
+Transcript was completed successfully,
+but the AI summarization service
+is currently unavailable.
+"""
 
 # ---------------------------------------------------
 # Home Route
@@ -285,7 +303,20 @@ def upload_audio():
         return {
             "error": str(e)
         }, 500
+@app.route('/delete/<int:id>', methods=['POST'])
+def delete_meeting_ui(id):
 
+    meeting = Meeting.query.get(id)
+
+    if not meeting:
+
+        return "Meeting not found", 404
+
+    db.session.delete(meeting)
+
+    db.session.commit()
+
+    return redirect('/history')
 # ---------------------------------------------------
 # UI UPLOAD ROUTE
 # ---------------------------------------------------
