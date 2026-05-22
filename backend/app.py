@@ -13,6 +13,14 @@ from werkzeug.utils import secure_filename
 
 from flask import redirect
 
+
+#_________________________PDF imports
+from flask import make_response
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.pagesizes import letter
+from io import BytesIO
+
 # ---------------------------------------------------
 # Flask App Configuration
 # ---------------------------------------------------
@@ -212,6 +220,127 @@ def meeting_detail(id):
         meeting=meeting,
         formatted_summary=formatted_summary
     )
+
+@app.route('/export/pdf/<int:id>')
+def export_pdf(id):
+
+    meeting = Meeting.query.get(id)
+
+    if not meeting:
+
+        return {
+            "error": "Meeting not found"
+        }, 404
+
+    # Create in-memory PDF buffer
+    buffer = BytesIO()
+
+    # Create PDF document
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        rightMargin=40,
+        leftMargin=40,
+        topMargin=40,
+        bottomMargin=28
+    )
+
+    # PDF styling
+    styles = getSampleStyleSheet()
+
+    elements = []
+
+    # -----------------------------------
+    # Title
+    # -----------------------------------
+
+    title = Paragraph(
+        f"<b>Meeting Report:</b> {meeting.filename}",
+        styles['Title']
+    )
+
+    elements.append(title)
+
+    elements.append(Spacer(1, 20))
+
+    # -----------------------------------
+    # Date
+    # -----------------------------------
+
+    date = Paragraph(
+        f"<b>Processed On:</b> {meeting.created_at.strftime('%b %d, %Y • %I:%M %p')}",
+        styles['BodyText']
+    )
+
+    elements.append(date)
+
+    elements.append(Spacer(1, 20))
+
+    # -----------------------------------
+    # Summary Section
+    # -----------------------------------
+
+    summary_heading = Paragraph(
+        "<b>Executive Summary</b>",
+        styles['Heading2']
+    )
+
+    elements.append(summary_heading)
+
+    elements.append(Spacer(1, 10))
+
+    summary = Paragraph(
+        meeting.summary.replace("\n", "<br/>"),
+        styles['BodyText']
+    )
+
+    elements.append(summary)
+
+    elements.append(Spacer(1, 20))
+
+    # -----------------------------------
+    # Transcript Section
+    # -----------------------------------
+
+    transcript_heading = Paragraph(
+        "<b>Transcript</b>",
+        styles['Heading2']
+    )
+
+    elements.append(transcript_heading)
+
+    elements.append(Spacer(1, 10))
+
+    transcript = Paragraph(
+        meeting.transcript.replace("\n", "<br/>"),
+        styles['BodyText']
+    )
+
+    elements.append(transcript)
+
+    # -----------------------------------
+    # Build PDF
+    # -----------------------------------
+
+    doc.build(elements)
+
+    pdf = buffer.getvalue()
+
+    buffer.close()
+
+    # -----------------------------------
+    # Send Download Response
+    # -----------------------------------
+
+    response = make_response(pdf)
+
+    response.headers['Content-Type'] = 'application/pdf'
+
+    response.headers['Content-Disposition'] = (
+        f'attachment; filename={meeting.filename}.pdf'
+    )
+
+    return response
 # ---------------------------------------------------
 # Upload + Transcription + Summary Route
 # ---------------------------------------------------

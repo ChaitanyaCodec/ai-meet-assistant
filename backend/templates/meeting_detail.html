@@ -198,7 +198,7 @@
 
             background: #e0e7ff;
         }
-
+ 
         /* ----------------------------------- */
         /* Sections */
         /* ----------------------------------- */
@@ -234,7 +234,14 @@
 
             border-bottom: 1px solid var(--border);
         }
+.action-buttons {
 
+    display: flex;
+
+    gap: 10px;
+
+    align-items: center;
+}
         .section-title {
 
             display: flex;
@@ -537,12 +544,27 @@
                     </h2>
 
                 </div>
+<div class="action-buttons">
 
-                <button class="copy-btn" onclick="copyTranscript()">
+    <button
+        class="copy-btn"
+        onclick="copyTranscript()"
+    >
 
-                    Copy Transcript
+        Copy Transcript
 
-                </button>
+    </button>
+
+    <a
+        href="/export/pdf/{{ meeting.id }}"
+        class="copy-btn"
+    >
+
+        Export PDF
+
+    </a>
+
+</div>
 
             </div>
 
@@ -555,6 +577,8 @@
             <pre class="transcript-content" id="transcript-content">{{ meeting.transcript }}</pre>
 
         </div>
+
+
 
     </div>
 
@@ -585,6 +609,15 @@
 
             alert("Transcript copied!");
         }
+
+        <a
+    href="/export/pdf/{{ meeting.id }}"
+    class="copy-btn"
+>
+
+    Export PDF
+
+</a>
 
     </script>
 
